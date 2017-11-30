@@ -1,0 +1,722 @@
+import simplegui
+import math
+import random
+#comments
+#game pitch sheet URL: https://www.dropbox.com/s/s86z11grdu4qfun/pitch%20sheet.jpg?dl=0
+#a prototype of the game 'monster tank', any function involving the enemy tank part have not implemented yet
+#move your tank to avoid enemy tank's missiles while shoot missiles to destroy enemy tanks
+#'up' key to move your tank upwards, 'down' key to move your tank downwards, 'left' key to move your tank leftwards,
+# 'right' key to move your tank rightwards, 'space'key to shoot.
+# the water cell stop tanks from shooting, the bricks and stones block tanks. Bricks can be destroyed by missiles,
+# while stones can not. The enemy tank AI has not implemented yet. 
+
+#Initialize globals
+#'W' represnets 'water', 'S' represnets 'stone', 'E' represents 'Empty', 'B' represents 'Blocks'
+map3 = [['E','W','E','E','W','E','E','E','E','W'],
+       ['E','B','W','B','B','E','E','B','W','E'],
+       ['B','B','E','E','E','B','E','B','W','B'],
+       ['B','W','W','W','W','W','E','B','E','B'],
+       ['B','B','B','B','E','E','B','W','E','E'],
+       ['B','W','B','E','W','W','E','E','E','B'],
+       ['E','E','W','W','E','E','B','E','B','E'],
+       ['B','E','B','E','B','E','E','B','B','B'],
+       ['E','E','E','E','B','E','E','E','E','E'],
+       ['E','E','E','E','E','E','E','E','E','E']]
+
+map1 = [['E','E','E','E','E','E','E','E','E','E'],
+        ['E','E','E','E','E','E','E','E','E','E'],
+        ['E','E','E','E','E','E','E','E','E','E'],
+        ['E','E','E','E','E','E','E','E','E','E'],
+        ['E','E','E','E','E','E','E','E','E','E'],
+        ['E','E','E','E','E','E','E','E','E','E'],
+        ['E','E','E','E','E','E','E','E','E','E'],
+        ['E','E','E','E','E','E','E','E','E','E'],
+        ['E','E','E','E','E','E','E','E','E','E'],
+        ['E','E','E','E','E','E','E','E','E','E'],
+        ['E','E','E','E','E','E','E','E','E','E']]
+
+map2 = [['E','W','E','E','W','E','E','E','E','W'],
+       ['E','E','W','B','B','E','E','B','W','E'],
+       ['B','B','E','E','E','B','E','B','W','B'],
+       ['E','W','W','W','W','W','E','B','E','B'],
+       ['E','E','E','B','E','E','B','W','E','E'],
+       ['B','W','B','E','W','W','E','E','E','E'],
+       ['E','E','W','W','E','E','E','E','B','E'],
+       ['B','E','B','E','B','E','E','B','E','B'],
+       ['E','E','E','E','B','E','E','E','E','E'],
+       ['E','E','E','E','E','E','E','E','E','E']]
+direction_left = False
+direction_right = False
+direction_up = False
+direction_down = False
+direction_draw = 'up'
+screen = 'menu'
+canvas_width = 800
+canvas_height = 600
+enemy_direction = 'down'
+live = 3
+score = 0
+
+#helper function
+def level_setup(level):
+    global map1
+    for i in range(grid.get_width()):
+        for j in range(grid.get_height()):
+            if level == 'easy':
+                grid.get_cells()[i][j] = map1[i][j]
+            if level == 'medium':
+                grid.get_cells()[i][j] = map2[i][j]
+            if level == 'hard':
+                grid.get_cells()[i][j] = map3[i][j]                
+
+def angle_to_vector(ang):
+    return [math.cos(ang), math.sin(ang)]
+
+def grid_value(pos_pixel):
+    a = pos_pixel[0] // 60 
+    b = pos_pixel[1] // 60
+    pixel_pos = [a,b]
+    return pixel_pos
+
+def get_neighbors(pos):
+    a = []
+    if pos[0] > 0:
+        a.append([pos[0] - 1, pos[1]])
+    if pos[0] < 9:
+        a.append([pos[0] + 1, pos[1]])
+    if pos[1] > 0:
+        a.append([pos[0], pos[1] -1])
+    if pos[1] < 9:
+        a.append([pos[0], pos[1] +1])
+    return a
+
+def neighbors_nobounds(pos):
+    a = []
+    a.append([pos[0] - 1, pos[1]])
+    a.append([pos[0] + 1, pos[1]])
+    a.append([pos[0], pos[1] -1])
+    a.append([pos[0], pos[1] +1])
+    return a
+    
+def tank_spawner():
+    x = random.choice([0, 270])
+    y = random.choice([0, 270])
+    enemy_pos = [x, y]
+    enemy_vel = [0, 0]
+    enemy_angle = 0
+    enemy_tank.add(Enemy(enemy_pos, enemy_vel, enemy_image, enemy_info, enemy_angle))  
+    
+#ImageInfo
+class Image_Info:
+    def __init__(self, center, size, radius = 0, lifespan = None, animated = False):
+        self.center = center
+        self.size = size
+        self.radius = radius
+        if lifespan:
+            self.lifespan = lifespan
+        else:
+            self.lifespan = float('inf')
+        self.animated = animated
+
+    def get_center(self):
+        return self.center
+
+    def get_size(self):
+        return self.size
+
+    def get_radius(self):
+        return self.radius
+
+    def get_lifespan(self):
+        return self.lifespan
+
+    def get_animated(self):
+        return self.animated
+        
+#stone images
+stone_info = Image_Info([15,15], [30, 30])
+stone_image = simplegui.load_image('https://dl.dropbox.com/s/og6p3x6fscwtf10/steel.gif?dl=0')
+
+#brick images
+brick_info = Image_Info([15,15], [30, 30])
+brick_image = simplegui.load_image('https://dl.dropbox.com/s/og6p3x6fscwtf10/steel.gif?dl=0')
+
+#water images
+water_info = Image_Info([30,30], [60,60])
+water_image = simplegui.load_image('https://dl.dropbox.com/s/ovc4x126uvqs2fq/water.gif?dl=0')
+
+#tank images
+my_tank_up_info = Image_Info([30,30], [60,60])
+my_tank_up_image = simplegui.load_image('https://dl.dropbox.com/s/hfpxs6immmefftr/enemy3U.gif?dl=0')
+
+my_tank_down_info = Image_Info([30,30], [60,60])
+my_tank_down_image = simplegui.load_image('https://dl.dropbox.com/s/3150pbtvtkmlno0/enemy3D.gif?dl=0')
+
+my_tank_left_info = Image_Info([30,30], [60,60])
+my_tank_left_image = simplegui.load_image('https://dl.dropbox.com/s/k8n3ypet6ln6s14/enemy3L.gif?dl=0')
+
+my_tank_right_info = Image_Info([30,30], [60,60])
+my_tank_right_image = simplegui.load_image('https://dl.dropbox.com/s/fmol97slapp8ees/enemy3R.gif?dl=0')
+
+missile_info = Image_Info([5,5], [10, 10])
+missile_image = simplegui.load_image("http://commondatastorage.googleapis.com/codeskulptor-assets/lathrop/shot2.png")
+
+splash_info = Image_Info([1920 / 2, 1080 / 2], [1920, 1080])
+splash_image = simplegui.load_image('https://dl.dropbox.com/s/n89oer56171v0sr/Splash%20Image.jpg?dl=0')
+
+enemy_info = Image_Info([30, 30], [60, 60])
+enemy_image = simplegui.load_image('https://dl.dropbox.com/s/5bf5yb1lh9ykz16/enemy2U.gif?dl=0')
+
+tutorial_info = Image_Info([3541 / 2, 3541 / 2], [3541, 3541])
+tutorial_image = simplegui.load_image('https://dl.dropbox.com/s/3wr8n53f8u8cocf/Presentation4.jpg?dl=0')
+
+gameover_info = Image_Info([160, 128], [320, 256])
+gameover_image = simplegui.load_image('https://dl.dropbox.com/s/0grll49vpg8sb0x/game%20over.jpg?dl=0')
+
+class Grid:
+    def __init__(self, height, width, pos = [0, 0]):
+        self.height = height
+        self.width = width
+        self.pos = [pos[0],pos[1]]
+        self.cells = [[0 for x in range(self.width)] for y in range(self.height)]   #create a matrix
+    
+    def get_height(self):
+        return self.height
+    
+    def get_width(self):
+        return self.width
+    
+    def get_cells(self):
+        return self.cells
+    
+    def set_water(self, row, column):
+        self.cells[row][column] = 'water'
+        
+    def set_brick(self, row, column):
+        self.cells[row][column] = 'brick'
+        
+    def set_stone(self, row, column):
+        self.cells[row][column] = 'stone'
+    
+    def set_empty(self, row, column):
+        self.cells[row][column] = 'empty'
+    
+    def draw(self, canvas):
+        for row in range(self.width):           #iterate over a matrix
+            for column in range(self.height):
+                self.pos = [water_info.get_size()[0]*(row + 0.5), water_info.get_size()[1]*(column + 0.5)]
+                if self.cells[row][column] == 'B':
+                    canvas.draw_image(brick_image, brick_info.get_center(), brick_info.get_size(), self.pos, [60, 60])
+                    
+                if self.cells[row][column] == 'W':
+                    canvas.draw_image(water_image, water_info.get_center(), water_info.get_size(), self.pos, [60, 60])
+                    
+                if self.cells[row][column] == 'E':
+                    pass
+                
+                if self.cells[row][column] == 'S':
+                    canvas.draw_image(stone_image, stone_info.get_center(), stone_info.get_size(), self.pos, [60, 60])
+                    
+    def click(self):
+        pass
+                
+    def mouse_handler(position):
+        pass
+
+class Tank:
+    def __init__(self, pos_pixel, vel, angle, image, info):
+        self.pos_pixel = [pos_pixel[0], pos_pixel[1]]
+        self.vel = [vel[0], vel[1]]
+        self.angle = angle
+        self.image = image
+        self.image_center = info.get_center()
+        self.image_size = info.get_size()
+        self.radius = info.get_radius()
+        self.pos = [2 * self.pos_pixel[0] + 30, 2 * self.pos_pixel[1] + 30]  #difference: self.pos[0] = 60 * self.pos_pixel[0]
+        
+    def get_position(self):
+        return self.pos
+    
+    def get_radius(self):
+        return self.radius
+    
+    def draw(self,canvas):
+        if direction_draw == 'left':
+            self.angle = math.pi
+            canvas.draw_image(my_tank_right_image, my_tank.image_center, my_tank.image_size, self.pos,  [60, 60], self.angle)
+
+        if direction_draw == 'right':
+            self.angle = 0
+            canvas.draw_image(my_tank_right_image, my_tank.image_center, my_tank.image_size, self.pos,  [60, 60], self.angle)
+
+        if direction_draw == 'down':
+            self.angle = math.pi / 2
+            canvas.draw_image(my_tank_right_image, my_tank.image_center, my_tank.image_size, self.pos,  [60, 60], self.angle)
+
+        if direction_draw == 'up':
+            self.angle = 3 * math.pi / 2
+            canvas.draw_image(my_tank_right_image, my_tank.image_center, my_tank.image_size, self.pos,  [60, 60], self.angle)
+
+    
+
+
+    def update(self):
+        if direction_up:
+            if self.pos_pixel[1] > 0:
+                if self.pos_pixel[1] % 30 != 0:
+                    self.pos_pixel[1] += self.vel[1]
+                    
+                else:
+                    if self.pos_pixel[0] % 30 == 0:
+                        if grid.get_cells()[self.pos_pixel[0] / 30][(self.pos_pixel[1] / 30 - 1)] == 'E' or grid.get_cells()[self.pos_pixel[0] / 30][(self.pos_pixel[1] / 30 - 1)] == 'W':
+                            self.pos_pixel[1] += self.vel[1] 
+                        else:
+                            pass
+                    else:
+                        if (grid.get_cells()[self.pos_pixel[0] / 30 + 1][(self.pos_pixel[1] / 30 - 1)] == 'E' or grid.get_cells()[self.pos_pixel[0] / 30 + 1][(self.pos_pixel[1] / 30) - 1] == 'W')\
+                        and (grid.get_cells()[self.pos_pixel[0] / 30][(self.pos_pixel[1] / 30) - 1] == 'E' or grid.get_cells()[self.pos_pixel[0] / 30][(self.pos_pixel[1] / 30) - 1] == 'W'):
+                            self.pos_pixel[1] += self.vel[1] 
+                        else:
+                            pass
+            else:
+                pass
+                
+                        
+        if direction_down:
+            if self.pos_pixel[1] < 270:
+                if self.pos_pixel[1] % 30 != 0:
+                    self.pos_pixel[1] += self.vel[1]
+                else:
+                    if self.pos_pixel[0] % 30 == 0:
+                        if grid.get_cells()[self.pos_pixel[0] / 30][(self.pos_pixel[1] / 30) + 1] == 'E' or grid.get_cells()[self.pos_pixel[0] / 30][(self.pos_pixel[1] / 30) + 1] == 'W':
+                            self.pos_pixel[1] += self.vel[1]
+                        else:
+                            pass
+                    else:
+                        if (grid.get_cells()[self.pos_pixel[0] / 30][(self.pos_pixel[1] / 30) + 1] == 'E' or grid.get_cells()[self.pos_pixel[0] / 30][(self.pos_pixel[1] / 30) + 1] == 'W')\
+                        and (grid.get_cells()[self.pos_pixel[0] / 30 + 1][(self.pos_pixel[1] / 30) + 1] == 'E' or grid.get_cells()[self.pos_pixel[0] / 30 + 1][(self.pos_pixel[1] / 30) + 1] == 'W'):
+                            self.pos_pixel[1] += self.vel[1]
+                        else:
+                            pass
+            else:
+                pass                
+                        
+        if direction_left:
+            if self.pos_pixel[0] > 0:
+                if self.pos_pixel[0] % 30 != 0:
+                    self.pos_pixel[0] += self.vel[0]
+                else:
+                    if self.pos_pixel[1] % 30 == 0:
+                        if grid.get_cells()[self.pos_pixel[0] / 30 - 1][(self.pos_pixel[1] / 30)] == 'E' or grid.get_cells()[self.pos_pixel[0] / 30 - 1][(self.pos_pixel[1] / 30)] == 'W':
+                            self.pos_pixel[0] += self.vel[0]
+                        else:
+                            pass
+                    else:
+                        if (grid.get_cells()[self.pos_pixel[0] / 30 - 1][(self.pos_pixel[1] / 30)] == 'E' or grid.get_cells()[self.pos_pixel[0] / 30 - 1][(self.pos_pixel[1] / 30) ] == 'W')\
+                        and (grid.get_cells()[self.pos_pixel[0] / 30 - 1][(self.pos_pixel[1] / 30) + 1] == 'E' or grid.get_cells()[self.pos_pixel[0] / 30 - 1][(self.pos_pixel[1] / 30) + 1] == 'W'):
+                            self.pos_pixel[0] += self.vel[0] 
+                        else:
+                            pass
+            else:
+                pass                        
+        if direction_right:
+            if self.pos_pixel[0] < 270:
+                if self.pos_pixel[0] % 30 != 0:
+                    self.pos_pixel[0] += self.vel[0]
+                else:
+                    if self.pos_pixel[1] % 30 == 0:
+                        if grid.get_cells()[self.pos_pixel[0] / 30 + 1][(self.pos_pixel[1] / 30)] == 'E' or grid.get_cells()[self.pos_pixel[0] / 30 + 1][(self.pos_pixel[1] / 30)] == 'W':
+                            self.pos_pixel[0] += self.vel[0]
+                        else:
+                            pass
+                    else:
+                        if (grid.get_cells()[self.pos_pixel[0] / 30 + 1][(self.pos_pixel[1] / 30)] == 'E' or grid.get_cells()[self.pos_pixel[0] / 30 + 1][(self.pos_pixel[1] / 30) ] == 'W')\
+                        and (grid.get_cells()[self.pos_pixel[0] / 30 + 1][(self.pos_pixel[1] / 30) + 1] == 'E' or grid.get_cells()[self.pos_pixel[0] / 30 + 1][(self.pos_pixel[1] / 30) + 1] == 'W'):
+                            self.pos_pixel[0] += self.vel[0] 
+                        else:
+                            pass
+            else:
+                pass
+        self.pos = [2 * self.pos_pixel[0] + 30, 2 * self.pos_pixel[1] + 30]  #difference: self.pos[0] = 60 * self.pos_pixel[0]
+                
+    def keydown(self, key):
+        global direction_left, direction_right, direction_up, direction_down, direction_draw
+        if key == simplegui.KEY_MAP['left']:
+            direction_left = True
+            direction_draw = 'left'
+            self.vel[0] -= 1
+
+        if key == simplegui.KEY_MAP['right']:
+            direction_right = True
+            direction_draw = 'right'
+            self.vel[0] += 1
+
+        if key == simplegui.KEY_MAP['down']:
+            direction_down = True
+            direction_draw = 'down'
+            self.vel[1] += 1
+            
+        if key == simplegui.KEY_MAP['up']:
+            direction_up = True
+            direction_draw = 'up' 
+            self.vel[1] -= 1
+            
+        if key == simplegui.KEY_MAP['space']:
+            self.shoot()
+            
+    def keyup(self, key):
+        global direction_left, direction_right, direction_up, direction_down
+        if key == simplegui.KEY_MAP['left']:
+            self.vel[0] += 1
+            direction_left = False
+            
+        if key == simplegui.KEY_MAP['right']:
+            self.vel[0] -= 1
+            direction_right = False
+            
+        if key == simplegui.KEY_MAP['down']:
+            self.vel[1] -= 1
+            direction_down = False
+            
+        if key == simplegui.KEY_MAP['up']:
+            self.vel[1] += 1
+            direction_up = False
+
+    def shoot(self):
+        missile_pos = [self.pos[0] + 30 * angle_to_vector(self.angle)[0], self.pos[1] + 30 * angle_to_vector(self.angle)[1]]
+        missile_vel = [3 * angle_to_vector(self.angle)[0], 3 * angle_to_vector(self.angle)[1]]
+        missile_group.add(Missile(missile_pos, missile_vel, missile_image, missile_info))            
+            
+class Enemy:
+    def __init__(self, pos, vel, image, info, angle, grid = [0, 0]):
+        self.pos = [pos[0],pos[1]]
+        self.vel = [vel[0],vel[1]]
+        self.image = image
+        self.image_center = info.get_center()
+        self.image_size = info.get_size()
+        self.angle = angle
+        self.levels = {}
+        self.grid = [grid[0], grid[1]]
+        self.redirect()
+        self.pos_pixel = [2 * self.pos[0] + 30, 2 * self.pos[1] + 30]  
+        self.shooting_timer = 0
+        
+    def draw(self, canvas):
+        if self.pos[0] % 30 == 0 and self.pos[1] % 30 == 0:
+            self.redirect()
+        
+        if self.vel == [1, 0]:
+            self.angle = math.pi / 2
+        
+        if self.vel == [-1, 0]:
+            self.angle = 3 * math.pi / 2
+            
+        if self.vel == [0, 1]:
+            self.angle = math.pi
+            
+        if self.vel == [0, -1]:
+            self.angle = 0
+        self.pos_pixel = [2 * self.pos[0] + 30, 2 * self.pos[1] + 30]  
+        canvas.draw_image(self.image, self.image_center, self.image_size, self.pos_pixel, [60, 60], self.angle)
+
+    def update(self): 
+        self.pos[0] += self.vel[0]
+        self.pos[1] += self.vel[1]
+        if self.shooting_timer == 60:
+            if self.vel == [1, 0]:
+                if my_tank.pos[0] > self.pos_pixel[0] and self.pos_pixel[1] < my_tank.pos[1] + 30 and self.pos_pixel[1] > my_tank.pos[1] - 30:
+                    missile_pos = [self.pos_pixel[0] + 30, self.pos_pixel[1]]
+                    missile_vel = [3, 0]
+                    enemy_missile_group.add(Enemy_Missile(missile_pos, missile_vel, missile_image, missile_info))  
+                    self.shooting_timer = 0
+                    
+            if self.vel == [-1, 0]:
+                if my_tank.pos[0] < self.pos_pixel[0] and self.pos_pixel[1] < my_tank.pos[1] + 30 and self.pos_pixel[1] > my_tank.pos[1] - 30:
+                    missile_pos = [self.pos_pixel[0] - 30, self.pos_pixel[1]]
+                    missile_vel = [-3, 0]
+                    enemy_missile_group.add(Enemy_Missile(missile_pos, missile_vel, missile_image, missile_info)) 
+                    self.shooting_timer = 0
+                    
+            if self.vel == [0, 1]:
+                if my_tank.pos[1] > self.pos_pixel[1] and self.pos_pixel[0] < my_tank.pos[0] + 30 and self.pos_pixel[0] > my_tank.pos[0] - 30:
+                    missile_pos = [self.pos_pixel[0], self.pos_pixel[1] + 30]
+                    missile_vel = [0, 3]
+                    enemy_missile_group.add(Enemy_Missile(missile_pos, missile_vel, missile_image, missile_info)) 
+                    self.shooting_timer = 0
+                    
+            if self.vel == [0, -1]:
+                if my_tank.pos[1] < self.pos_pixel[1] and self.pos_pixel[0] < my_tank.pos[0] + 30 and self.pos_pixel[0] > my_tank.pos[0] - 30:
+                    missile_pos = [self.pos_pixel[0], self.pos_pixel[1] - 30]
+                    missile_vel = [0, -3]
+                    enemy_missile_group.add(Enemy_Missile(missile_pos, missile_vel, missile_image, missile_info)) 
+                    self.shooting_timer = 0
+                    
+        else:
+            self.shooting_timer += 1
+    def redirect(self):
+        self.bfs([my_tank.get_position()[0] / 60, my_tank.get_position()[1] / 60])
+    
+    def bfs(self, start):
+        self.levels = {}
+        queue = []
+        queue.append(start)
+        a = queue.pop(0)
+        self.levels[(a[0], a[1])] = 0
+        b = get_neighbors(a) 
+        for x in b:
+            if grid.get_cells()[x[0]][x[1]] == 'B' or self.levels.has_key((x[0], x[1])):
+                pass
+            else:
+                queue.append(x)
+                self.levels[(x[0], x[1])] = self.levels[(a[0], a[1])] + 1
+        while len(queue) > 0:
+            a = queue.pop(0)
+            b = get_neighbors(a)
+            for x in b:
+                if grid.get_cells()[x[0]][x[1]] == 'B' or self.levels.has_key((x[0], x[1])):
+                    pass
+                else:   
+                    queue.append(x)
+                    self.levels[(x[0], x[1])] = self.levels[(a[0], a[1])] + 1
+                    
+        self.grid[0] = self.pos[0] / 30
+        self.grid[1] = self.pos[1] / 30
+        
+        enemy_neighbors = neighbors_nobounds([self.grid[0], self.grid[1]])
+        for enemy_neighbor in enemy_neighbors:
+            if self.levels.has_key((enemy_neighbor[0], enemy_neighbor[1])):
+                pass
+            else:
+                self.levels[(enemy_neighbor[0], enemy_neighbor[1])] = 15
+
+        min_level = min(self.levels[(self.grid[0] + 1, self.grid[1])], self.levels[(self.grid[0] - 1, self.grid[1])], 
+                        self.levels[(self.grid[0] , self.grid[1] + 1)], self.levels[(self.grid[0] , self.grid[1] - 1)])            
+        
+        if min_level == self.levels[(self.grid[0] + 1, self.grid[1])]:
+            direction = 'right'
+            self.vel = [1, 0]
+        
+        if min_level == self.levels[(self.grid[0] - 1, self.grid[1])]:
+            direction = 'left'
+            self.vel = [-1, 0]
+            
+        if min_level == self.levels[(self.grid[0] , self.grid[1] + 1)]:
+            direction = 'down'
+            self.vel = [0, 1]
+            
+        if min_level == self.levels[(self.grid[0] , self.grid[1] - 1)]:
+            direction = 'up'
+            self.vel = [0, -1]
+ 
+    def setup_vel(self):
+        a = [1, 0]
+        b = [-1, 0]
+        c = [0, -1]
+        d = [0, 1]
+        self.vel = random.choice([a, b, c, d])
+        if self.vel == a:
+            self.angle = 0
+        if self.vel == b:
+            self.angle = math.pi
+            
+        if self.vel == c:
+            self.angle = 3 * math.pi / 2
+            
+        if self.vel == d:
+            self.angle = math.pi / 2  
+            
+class Missile:
+    def __init__(self, pos, vel, image, info):
+        self.pos = [pos[0],pos[1]]
+        self.vel = [vel[0],vel[1]]
+        self.image = image
+        self.image_center = info.get_center()
+        self.image_size = info.get_size()
+        self.radius = info.get_radius()
+        self.lifespan = info.get_lifespan()
+        self.age = 0
+        
+    def draw(self, canvas):
+        canvas.draw_image(self.image, self.image_center, self.image_size,
+                          self.pos, [10, 10])
+    
+    def get_position(self):
+        return self.pos
+
+    def update(self):
+        global score
+        self.pos[0] = (self.pos[0] + self.vel[0])
+        self.pos[1] = (self.pos[1] + self.vel[1]) 
+        a=grid_value(self.pos)[0]
+        b=grid_value(self.pos)[1] 
+        if self.pos[0] < 1 or self.pos[0] > 599 or self.pos[1] < 1 or self.pos[1] > 599:
+            missile_group.remove(self)
+        else:
+            if grid.get_cells()[a][b] == 'B':
+                missile_group.remove(self)
+                grid.get_cells()[a][b] = 'E'    
+        for tank in enemy_tank:
+            if self.pos[0] > tank.pos_pixel[0] - 30 and self.pos[0] < tank.pos_pixel[0] + 30 and self.pos[1] > tank.pos_pixel[1] - 30\
+            and self.pos[1] < tank.pos_pixel[1] + 30:
+                missile_group.remove(self)
+                enemy_tank.remove(tank)
+                score += 1
+
+class Enemy_Missile: 
+    def __init__(self, pos, vel, image, info):
+        self.pos = [pos[0],pos[1]]
+        self.vel = [vel[0],vel[1]]
+        self.image = image
+        self.image_center = info.get_center()
+        self.image_size = info.get_size()
+        self.radius = info.get_radius()
+        self.lifespan = info.get_lifespan()
+        self.age = 0
+        
+    def draw(self, canvas):
+        canvas.draw_image(self.image, self.image_center, self.image_size,
+                          self.pos, [10, 10])
+    
+    def get_position(self):
+        return self.pos
+
+    def update(self):
+        global screen, live
+        self.pos[0] = (self.pos[0] + self.vel[0])
+        self.pos[1] = (self.pos[1] + self.vel[1]) 
+        a=grid_value(self.pos)[0]
+        b=grid_value(self.pos)[1] 
+        if self.pos[0] < 1 or self.pos[0] > 599 or self.pos[1] < 1 or self.pos[1] > 599:
+            enemy_missile_group.remove(self)
+        else:
+            if grid.get_cells()[a][b] == 'B':
+                enemy_missile_group.remove(self)
+                grid.get_cells()[a][b] = 'E'
+        if self.pos[0] > my_tank.pos[0] - 30 and self.pos[0] < my_tank.pos[0] + 30 and self.pos[1] > my_tank.pos[1] - 30\
+            and self.pos[1] < my_tank.pos[1] + 30:
+                enemy_missile_group.remove(self)
+                if live == 1:
+                    screen = 'gameover'
+                    gameover()
+                else:
+                    live -= 1
+
+
+def gameover():
+    global my_tank, missile_group, enemy_tank, enemy_missile_group, direction_left, direction_right,\
+    direction_up,direction_down, direction_draw, screen, enemy_direction, live
+    print 1
+    my_tank = Tank([120, 270], [0, 0], 0,  my_tank_up_image, my_tank_up_info)
+    missile_group = set([])
+    enemy_tank = set([])
+    enemy_missile_group = set([])
+    direction_left = False
+    direction_right = False
+    direction_up = False
+    direction_down = False
+    direction_draw = 'up'
+    enemy_direction = 'down'
+    live = 3
+    score = 0
+
+                
+def draw(canvas):
+    if screen == 'menu':
+        canvas.draw_image(splash_image, splash_info.get_center(), splash_info.get_size(), (canvas_width / 2, canvas_height / 2), (canvas_width, canvas_height))
+        
+        canvas.draw_text('TUTORIAL', (110, 385), 28, 'Red')
+        canvas.draw_text('EASY', (130, 485), 30, 'Red')
+        canvas.draw_text('MEDIUM', (360, 385), 30, 'Red')
+        canvas.draw_text('HARD', (380, 485), 30, 'Red')
+        canvas.draw_text('HIGH SCORE', (600, 100), 30, 'Red')
+        
+        canvas.draw_polygon([(100, 350), (100, 420), (250, 420), (250, 350)], 5, 'Green')
+        canvas.draw_polygon([(100, 450), (100, 520), (250, 520), (250, 450)], 5, 'Green')
+        canvas.draw_polygon([(350, 450 ), (350, 520), (500, 520), (500, 450)], 5, 'Green')
+        canvas.draw_polygon([(350, 350), (350, 420), (500, 420), (500, 350)], 5, 'Green')
+        
+    if screen == 'game':
+        grid.draw(canvas)
+        canvas.draw_polygon([(600, 0), (800, 0), (800, 600), (600, 600)], 1, 'White', 'White')
+        canvas.draw_text('LIVE:', (630, 100), 30, 'Black')
+        canvas.draw_text('SCORE:', (630, 300), 30, 'Black')
+        canvas.draw_text(str(live), (720, 100), 30, 'Black')
+        canvas.draw_text(str(score), (750, 300), 30, 'Black')
+        my_tank.update()
+        my_tank.draw(canvas)
+        for missile in missile_group:
+            missile.update()        
+            missile.draw(canvas)
+        for tank in enemy_tank:
+            tank.update()
+            tank.draw(canvas)
+        for enemy_missile in enemy_missile_group:
+            enemy_missile.update()
+            enemy_missile.draw(canvas)
+
+    if screen == 'tutorial':
+        canvas.draw_image(tutorial_image, tutorial_info.get_center(), tutorial_info.get_size(), (canvas_width / 2, canvas_height / 2), (canvas_width, canvas_height))
+        canvas.draw_polygon([(480, 550), (480, 600), (600, 600), (600, 550)], 3, 'Yellow')
+        canvas.draw_text('Back to menu', (480, 580), 20, 'Black')
+        
+    if screen == 'gameover':
+        canvas.draw_image(gameover_image, gameover_info.get_center(), gameover_info.get_size(), (canvas_width / 2, canvas_height / 2), (canvas_width, canvas_height))
+        #canvas.draw_polygon([(480, 550), (480, 600), (600, 600), (600, 550)], 3, 'Yellow')
+        canvas.draw_text('Back to menu', (680, 580), 20, 'White')
+    
+    if screen == 'high_score':
+        canvas.draw_image(gameover_image, gameover_info.get_center(), gameover_info.get_size(), (canvas_width / 2, canvas_height / 2), (canvas_width, canvas_height))
+        
+def mouse_handler(pos):
+    global screen
+    if screen == 'menu':
+        if (pos[0] > 100 and pos[0] < 250) and (pos[1] > 350 and pos[1] < 420):
+            screen = 'tutorial'
+        
+        if (pos[0] > 100 and pos[0] < 250) and (pos[1] > 450 and pos[1] < 520):
+            screen = 'game'        
+            level_setup('easy')
+        
+        if (pos[0] > 350 and pos[0] < 500) and (pos[1] > 350 and pos[1] < 420):
+            screen = 'game'
+            level_setup('medium')
+     
+        if (pos[0] > 350 and pos[0] < 500) and (pos[1] > 450 and pos[1] < 520):
+            screen = 'game'
+            level_setup('hard')
+         
+        if (pos[0] > 595 and pos[0] < 783) and (pos[1] > 75 and pos[1] < 102):
+            screen = 'high_score'
+    
+    if screen == 'tutorial':
+        if (pos[0] > 480 and pos[0] < 600) and (pos[1] > 550 and pos[1] < 600):
+            screen = 'menu'
+        
+    if screen == 'gameover':
+        if (pos[0] > 680 and pos[0] < 800) and (pos[1] > 550 and pos[1] < 600):
+            screen = 'menu'
+        
+def keydown_handler(key):
+    my_tank.keydown(key)
+    
+    
+def keyup_handler(key):
+    my_tank.keyup(key)  
+
+def time_handler():
+    tank_spawner()   
+#Initialize the background   
+grid = Grid(10, 10)
+
+my_tank = Tank([120, 270], [0, 0], 0,  my_tank_up_image, my_tank_up_info)
+missile_group = set([])
+enemy_tank = set([])
+enemy_missile_group = set([])
+frame = simplegui.create_frame("Monster Tanks", 800, 600) 
+frame.set_draw_handler(draw)
+frame.set_keydown_handler(keydown_handler)
+frame.set_keyup_handler(keyup_handler)
+frame.set_mouseclick_handler(mouse_handler)
+timer = simplegui.create_timer(2000, time_handler)
+timer.start()
+frame.start()
