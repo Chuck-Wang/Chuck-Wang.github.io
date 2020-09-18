@@ -1,0 +1,107 @@
+﻿<!DOCTYPE HTML>
+<!--
+	Strata by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+	<head>
+		<title>Pacwar battleground</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<!--[if lte IE 8]><script src="assets/js/ie/html5shiv.js"></script><![endif]-->
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<!--[if lte IE 8]><link rel="stylesheet" href="assets/css/ie8.css" /><![endif]-->
+		<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.1/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+	</head>
+	<body id="top">
+
+		<!-- Header -->
+			<header id="header">
+				<div class="inner">
+					<a href="#" class="image avatar"><img src="images/download.png" alt="" /></a>
+					<h1><strong>Welcome to Pacwar,</strong><br />
+					A COMP440/557 AI contest
+				</div>
+			</header>
+
+		<!-- Main -->
+			<div id="main">
+
+				<!-- One -->
+					<section id="three">
+						<h2>Submit your gene!</h2>
+						<div class="text" style="color:red" id="errorMsg"></div>
+						<div class="row">
+							<div class="8u 12u$(small)">
+								<form method="post" action="#" id="feneForm">
+									<div class="row uniform 50%">
+										<div class="6u 12u$(xsmall)"><input type="text" name="name" id="name" placeholder="Team name" /></div>
+										<div class="6u$ 12u$(xsmall)"><input type="email" name="email" id="email" placeholder="Email" /></div>
+										<div class="12u$"><textarea name="gene" id="gene" placeholder="Enter your gene here!" rows="3"></textarea></div>
+									</div>
+								</form>
+								<ul class="actions">
+									<li><a class="button" id="submitBtn">Submit</a></li>
+								</ul>
+							</div>
+							<div class="4u$ 12u$(small)">
+								<ul class="labeled-icons">
+									<li>
+										<h3 href="mailto:chuck@wangqihan.com" class="icon fa-envelope-o"><span class="label">Email</span></h3>
+										<a href="#">qw15@rice.edu</a>
+									</li>
+								</ul>
+							</div>
+						</div>
+					</section>
+
+			</div>
+
+		<!-- Footer -->
+			<footer id="footer">
+				<div class="inner">
+					<ul class="copyright">
+						<li>&copy; Chuck Wang</li><li>Design: <a href="http://html5up.net">HTML5 UP</a></li>
+					</ul>
+				</div>
+			</footer>
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.poptrox.min.js"></script>
+			<script src="assets/js/skel.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<!--[if lte IE 8]><script src="assets/js/ie/respond.min.js"></script><![endif]-->
+			<script src="assets/js/main.js"></script>
+
+			<!-- The core Firebase JS SDK is always required and must be listed first -->
+			<script src="https://www.gstatic.com/firebasejs/7.21.0/firebase-app.js"></script>
+
+			<!-- TODO: Add SDKs for Firebase products that you want to use
+				https://firebase.google.com/docs/web/setup#available-libraries -->
+			<script src="https://www.gstatic.com/firebasejs/7.21.0/firebase-analytics.js"></script>
+			<script src="https://www.gstatic.com/firebasejs/7.21.0/firebase-database.js"></script>
+
+			<script>
+			// Your web app's Firebase configuration
+			// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+			var firebaseConfig = {
+				apiKey: "AIzaSyCZtaziLfS1ulbDq-RnK133NTFcXE2Nxgc",
+				authDomain: "pacwar-ad65c.firebaseapp.com",
+				databaseURL: "https://pacwar-ad65c.firebaseio.com",
+				projectId: "pacwar-ad65c",
+				storageBucket: "pacwar-ad65c.appspot.com",
+				messagingSenderId: "13784505394",
+				appId: "1:13784505394:web:a50e7c13d941040d81302b",
+				measurementId: "G-C15XFJ0ZN2"
+			};
+			// Initialize Firebase
+			firebase.initializeApp(firebaseConfig);
+			firebase.analytics();
+			</script>
+
+			<script src="script.js"></script>
+
+	</body>
+</html>
