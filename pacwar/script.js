@@ -10,6 +10,7 @@ document.getElementById("submitBtn").onclick = function saveToFirebase() {
     
         firebase.database().ref('web-messages').push().set(messageObject)
             .then(function(snapshot) {
+                document.getElementById("errorMsg").innerHTML = "Success!";
                 // success(); // some success method
             }, function(error) {
                 console.log('error' + error);
